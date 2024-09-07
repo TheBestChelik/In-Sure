@@ -18,4 +18,5 @@ interface IInsurance {
     error ExpiredPolicy();
     error PolicyAlreadyExists();
     error PriceAboveThreshold(uint256 currentPrice, uint256 threshold);
+    error PriceUnderThreshold(uint256 currentPrice, uint256 threshold);
 }
