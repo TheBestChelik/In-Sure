@@ -1,4 +1,3 @@
-require("@nomicfoundation/hardhat-verify");
 require("@nomicfoundation/hardhat-toolbox");
 require('hardhat-deploy');
 require('dotenv').config();
