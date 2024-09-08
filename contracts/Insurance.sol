@@ -95,7 +95,7 @@ contract Insurance is IInsurance, Ownable, RedstoneConsumerNumericMock {
 
         emit PolicyRepayed(policyId, repaymentAmount);
 
-        // delete policies[policyId];
+        delete policies[policyId];
     }
 
     function addLiquidity(uint256 amount) public onlyOwner {
