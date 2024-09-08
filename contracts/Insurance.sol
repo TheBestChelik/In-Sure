@@ -33,26 +33,13 @@ contract Insurance is IInsurance, Ownable, RedstoneConsumerNumericMock {
         treasuryToken = _treasuryToken;
         policyPriceAPR = _policyPriceAPR;
         threshold = _threshold;
-        symbol = "USDT";
-        // symbol = bytes32(bytes(insuredToken.symbol()));
+        symbol = bytes32(bytes(insuredToken.symbol()));
         oracleDecimals = _oracleDecimals;
     }
-
-    // function getLatestStxPrice() public view returns (uint256) {
-    //     bytes32 dataFeedId = bytes32("USDT");
-    //     return getOracleNumericValueFromTxMsg(dataFeedId);
-    // }
-
-    // function validateTimestamp(uint256 receivedTimestampMilliseconds)
-    //     public
-    //     view
-    //     override(RedstoneConsumerNumericMock, MainDemoConsumerBase)
-    // {}
 
     function createPolicy(uint256 insuredAmount, uint256 duration) public returns (uint256 policyId) {
         uint256 insuranceFee = (insuredAmount * policyPriceAPR * duration) / (YEAR_DURATION * 100);
 
-        // add depeg check
         uint256 priceCurrent = getOracleNumericValueFromTxMsg(bytes32(symbol));
         if (priceCurrent < threshold) {
             revert PriceUnderThreshold(priceCurrent, threshold);
@@ -69,18 +56,19 @@ contract Insurance is IInsurance, Ownable, RedstoneConsumerNumericMock {
     }
 
     function getRepayment(uint256 policyId) public returns (uint256 repaymentAmount) {
-        //checks
         Policy storage policy = policies[policyId];
         if (policy.policyHolder == address(0)) {
-            revert UnexistantPolicy();
+            revert NonexistantPolicy();
         }
         if (policy.policyHolder != msg.sender) {
             revert UnauthorizatedHolder();
         }
         if (policy.endTimestamp < block.timestamp) {
-            // uint256 timestamp = policy.endTimestamp;
-            // delete policies[policyId];
             revert ExpiredPolicy();
+        }
+
+        if (policy.finished) {
+            revert FinishedPolicy();
         }
 
         // price request
@@ -93,9 +81,9 @@ contract Insurance is IInsurance, Ownable, RedstoneConsumerNumericMock {
         repaymentAmount = (policy.insuredAmount * (10 ** oracleDecimals - price)) / 10 ** oracleDecimals;
         insuredToken.transfer(msg.sender, repaymentAmount);
 
-        emit PolicyRepayed(policyId, repaymentAmount);
+        policies[policyId].finished = true;
 
-        delete policies[policyId];
+        emit PolicyRepayed(policyId, repaymentAmount);
     }
 
     function addLiquidity(uint256 amount) public onlyOwner {
